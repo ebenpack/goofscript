@@ -1,0 +1,7 @@
+package pamperscript
+
+sourcedir=src
+
+opts="-p contrib"
+
+modules = HTML, HTML.Types
