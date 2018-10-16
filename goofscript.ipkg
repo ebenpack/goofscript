@@ -1,0 +1,6 @@
+package goofscript
+
+sourcedir=src
+
+
+modules = HTML, HTML.Types
