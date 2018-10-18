@@ -97,6 +97,16 @@ isSectioningContent (MkHTMLElement (MkElement Nav _ _ _)) = True
 isSectioningContent (MkHTMLElement (MkElement Section _ _ _)) = True
 isSectioningContent _ = False
 
+isLabelableContent : HTMLElement -> Bool
+isLabelableContent (MkHTMLElement (MkElement Button _ _ _)) = True
+isLabelableContent (MkHTMLElement (MkElement Input _ _ _)) = True
+isLabelableContent (MkHTMLElement (MkElement Meter _ _ _)) = True
+isLabelableContent (MkHTMLElement (MkElement Output _ _ _)) = True
+isLabelableContent (MkHTMLElement (MkElement Progress _ _ _)) = True
+isLabelableContent (MkHTMLElement (MkElement Select _ _ _)) = True
+isLabelableContent (MkHTMLElement (MkElement Textarea _ _ _)) = True
+isLabelableContent _ = False
+
 isHTag : HTMLElement -> Bool
 isHTag (MkHTMLElement (MkElement H1 _ _ _)) = True
 isHTag (MkHTMLElement (MkElement H2 _ _ _)) = True
@@ -109,7 +119,6 @@ isHTag _ = False
 isHeadingContent : HTMLElement -> Bool
 isHeadingContent (MkHTMLElement (MkElement Hgroup _ _ _)) = True
 isHeadingContent elem = isHTag elem
-
 
 isPhrasingContent : HTMLElement -> Bool
 isPhrasingContent (MkHTMLElement (MkElement Abbr _ _ _)) = True
@@ -225,6 +234,9 @@ validChildren : (HTMLElement -> Bool) -> Vect n HTMLElement -> Bool
 validChildren _ Nil = True
 validChildren pred (x :: xs) = pred x && validChildren pred xs
 
+anyChildren : Vect n HTMLElement -> Bool
+anyChildren _ = True
+
 isTag : TypeTag -> HTMLElement -> Bool
 isTag t (MkHTMLElement (MkElement t' _ _ Nil)) = (t == t')
 isTag _ _ = False
@@ -237,6 +249,9 @@ validDescendants pred (x :: xs) = pred x && validDescendants pred xs &&
         MkHTMLElement (MkElement _ _ _ children) => validDescendants pred children
         _ => True
 
+textChildren : Vect m HTMLElement -> Bool
+textChildren = validDescendants isTextNode
+
 emptyChildren : Vect n HTMLElement -> Bool
 emptyChildren children = length children == 0
 
@@ -245,6 +260,24 @@ flowChildren = validChildren isFlowContent
 
 phrasingChildren : Vect n HTMLElement -> Bool
 phrasingChildren = validChildren isPhrasingContent
+
+-- TODO: should isFlowContent recurse? or just no header/footer?
+flowChildrenSansHeaderFooterDescendant : Vect m HTMLElement -> Bool
+flowChildrenSansHeaderFooterDescendant Nil = True
+flowChildrenSansHeaderFooterDescendant (x :: xs) = validFlowContentSansHeaderFooter x && flowChildrenSansHeaderFooterDescendant xs
+    where
+        validFlowContentSansHeaderFooter (MkHTMLElement (MkElement Header _ _ _)) = False
+        validFlowContentSansHeaderFooter (MkHTMLElement (MkElement Footer _ _ _)) = False
+        validFlowContentSansHeaderFooter elem =
+            isFlowContent elem &&
+            case elem of
+                MkHTMLElement (MkElement _ _ _ Nil) => True
+                MkHTMLElement (MkElement _ _ _ children) => flowChildrenSansHeaderFooterDescendant children
+                _ => True
+
+{--
+-- Elements
+--}
 
 validAddressChildren : Vect m HTMLElement -> Bool
 validAddressChildren Nil = True
@@ -283,19 +316,6 @@ aside :
     HTMLElement
 aside attrs children = mkElement Aside attrs children
 
--- TODO: should isFlowContent recurse? or just no header/footer?
-flowChildrenSansHeaderFooterDescendant : Vect m HTMLElement -> Bool
-flowChildrenSansHeaderFooterDescendant Nil = True
-flowChildrenSansHeaderFooterDescendant (x :: xs) = validFlowContentSansHeaderFooter x && flowChildrenSansHeaderFooterDescendant xs
-    where
-        validFlowContentSansHeaderFooter (MkHTMLElement (MkElement Header _ _ _)) = False
-        validFlowContentSansHeaderFooter (MkHTMLElement (MkElement Footer _ _ _)) = False
-        validFlowContentSansHeaderFooter elem =
-            isFlowContent elem &&
-            case elem of
-                MkHTMLElement (MkElement _ _ _ Nil) => True
-                MkHTMLElement (MkElement _ _ _ children) => flowChildrenSansHeaderFooterDescendant children
-                _ => True
 
 footer :
     Vect n Attr ->
@@ -353,14 +373,13 @@ header :
     HTMLElement
 header attrs children = mkElement Header attrs children
 
-validHgroupChildren : Vect m HTMLElement -> Bool
-validHgroupChildren Nil = True
-validHgroupChildren (x :: xs) = isHTag x && validHgroupChildren xs
+hgroupChildren : Vect m HTMLElement -> Bool
+hgroupChildren children = (not (emptyChildren children)) && (validChildren isHTag children)
 
 hgroup :
     Vect n Attr ->
     (children : Vect m HTMLElement) ->
-    {auto prf : not (HTML.Elements.emptyChildren children) && (HTML.Elements.validHgroupChildren children) = True} ->
+    {auto prf : HTML.Elements.hgroupChildren children = True} ->
     HTMLElement
 hgroup attrs children = mkElement Hgroup attrs children
 
@@ -1086,128 +1105,164 @@ fieldset :
     HTMLElement
 fieldset attrs children = mkElement Fieldset attrs children
 
--- form :
---     Vect n Attr ->
---     (children: Vect m HTMLElement) ->
---     {auto prf : (HTML.Elements.flowChildren children) = True} ->
---     HTMLElement
--- form attrs children = mkElement Form attrs children
---
--- input :
---     Vect n Attr ->
---     (children: Vect m HTMLElement) ->
---     {auto prf : (HTML.Elements.flowChildren children) = True} ->
---     HTMLElement
--- input attrs children = mkElement Input attrs children
---
--- label :
---     Vect n Attr ->
---     (children: Vect m HTMLElement) ->
---     {auto prf : (HTML.Elements.flowChildren children) = True} ->
---     HTMLElement
--- label attrs children = mkElement Label attrs children
---
--- legend :
---     Vect n Attr ->
---     (children: Vect m HTMLElement) ->
---     {auto prf : (HTML.Elements.flowChildren children) = True} ->
---     HTMLElement
--- legend attrs children = mkElement Legend attrs children
---
--- meter :
---     Vect n Attr ->
---     (children: Vect m HTMLElement) ->
---     {auto prf : (HTML.Elements.flowChildren children) = True} ->
---     HTMLElement
--- meter attrs children = mkElement Meter attrs children
---
--- optgroup :
---     Vect n Attr ->
---     (children: Vect m HTMLElement) ->
---     {auto prf : (HTML.Elements.flowChildren children) = True} ->
---     HTMLElement
--- optgroup attrs children = mkElement Optgroup attrs children
---
--- option :
---     Vect n Attr ->
---     (children: Vect m HTMLElement) ->
---     {auto prf : (HTML.Elements.flowChildren children) = True} ->
---     HTMLElement
--- option attrs children = mkElement Option attrs children
---
--- output :
---     Vect n Attr ->
---     (children: Vect m HTMLElement) ->
---     {auto prf : (HTML.Elements.flowChildren children) = True} ->
---     HTMLElement
--- output attrs children = mkElement Output attrs children
---
--- progress :
---     Vect n Attr ->
---     (children: Vect m HTMLElement) ->
---     {auto prf : (HTML.Elements.flowChildren children) = True} ->
---     HTMLElement
--- progress attrs children = mkElement Progress attrs children
---
--- select :
---     Vect n Attr ->
---     (children: Vect m HTMLElement) ->
---     {auto prf : (HTML.Elements.flowChildren children) = True} ->
---     HTMLElement
--- select attrs children = mkElement Select attrs children
---
--- textarea :
---     Vect n Attr ->
---     (children: Vect m HTMLElement) ->
---     {auto prf : (HTML.Elements.flowChildren children) = True} ->
---     HTMLElement
--- textarea attrs children = mkElement Textarea attrs children
---
--- details :
---     Vect n Attr ->
---     (children: Vect m HTMLElement) ->
---     {auto prf : (HTML.Elements.flowChildren children) = True} ->
---     HTMLElement
--- details attrs children = mkElement Details attrs children
---
--- dialog :
---     Vect n Attr ->
---     (children: Vect m HTMLElement) ->
---     {auto prf : (HTML.Elements.flowChildren children) = True} ->
---     HTMLElement
--- dialog attrs children = mkElement Dialog attrs children
---
+validFormDescendant : HTMLElement -> Bool
+validFormDescendant child = isFlowContent child && (not (isTag Form child))
+
+formChildren : Vect m HTMLElement -> Bool
+formChildren = validDescendants validFormDescendant
+
+form :
+    Vect n Attr ->
+    (children: Vect m HTMLElement) ->
+    {auto prf : (HTML.Elements.formChildren children) = True} ->
+    HTMLElement
+form attrs children = mkElement Form attrs children
+
+input :
+    Vect n Attr ->
+    (children: Vect m HTMLElement) ->
+    {auto prf : (HTML.Elements.emptyChildren children) = True} ->
+    HTMLElement
+input attrs children = mkElement Input attrs children
+
+validLabelDescendant : HTMLElement -> Bool
+validLabelDescendant child = isPhrasingContent child && (not (isTag Label child))
+-- TODO: FIX
+-- No labelable elements other than the labeled control are allowed.
+
+labelChildren : Vect m HTMLElement -> Bool
+labelChildren = validDescendants validLabelDescendant
+
+label :
+    Vect n Attr ->
+    (children: Vect m HTMLElement) ->
+    {auto prf : (HTML.Elements.labelChildren children) = True} ->
+    HTMLElement
+label attrs children = mkElement Label attrs children
+
+legend :
+    Vect n Attr ->
+    (children: Vect m HTMLElement) ->
+    {auto prf : (HTML.Elements.phrasingChildren children) = True} ->
+    HTMLElement
+legend attrs children = mkElement Legend attrs children
+
+validMeterDescendant : HTMLElement -> Bool
+validMeterDescendant child = isPhrasingContent child && (not (isTag Meter child))
+
+meterChildren : Vect m HTMLElement -> Bool
+meterChildren = validDescendants validMeterDescendant
+
+meter :
+    Vect n Attr ->
+    (children: Vect m HTMLElement) ->
+    {auto prf : (HTML.Elements.meterChildren children) = True} ->
+    HTMLElement
+meter attrs children = mkElement Meter attrs children
+
+validOptgroupDescendant : HTMLElement -> Bool
+validOptgroupDescendant = isTag Option
+
+optgroupChildren : Vect m HTMLElement -> Bool
+optgroupChildren = validDescendants validOptgroupDescendant
+
+optgroup :
+    Vect n Attr ->
+    (children: Vect m HTMLElement) ->
+    {auto prf : (HTML.Elements.optgroupChildren children) = True} ->
+    HTMLElement
+optgroup attrs children = mkElement Optgroup attrs children
+
+option :
+    Vect n Attr ->
+    (children: Vect m HTMLElement) ->
+    {auto prf : (HTML.Elements.textChildren children) = True} ->
+    HTMLElement
+option attrs children = mkElement Option attrs children
+
+output :
+    Vect n Attr ->
+    (children: Vect m HTMLElement) ->
+    {auto prf : (HTML.Elements.phrasingChildren children) = True} ->
+    HTMLElement
+output attrs children = mkElement Output attrs children
+
+progressChildren : Vect m HTMLElement -> Bool
+progressChildren = validDescendants validProgressDescendant
+    where
+        validProgressDescendant : HTMLElement -> Bool
+        validProgressDescendant child = isPhrasingContent child && (not (isTag Progress child))
+
+progress :
+    Vect n Attr ->
+    (children: Vect m HTMLElement) ->
+    {auto prf : (HTML.Elements.progressChildren children) = True} ->
+    HTMLElement
+progress attrs children = mkElement Progress attrs children
+
+selectChildren : Vect m HTMLElement -> Bool
+selectChildren = validChildren validSelectChildren
+    where
+        validSelectChildren : HTMLElement -> Bool
+        validSelectChildren child = (isTag Option child) || (isTag Optgroup child)
+
+select :
+    Vect n Attr ->
+    (children: Vect m HTMLElement) ->
+    {auto prf : (HTML.Elements.selectChildren children) = True} ->
+    HTMLElement
+select attrs children = mkElement Select attrs children
+
+textarea :
+    Vect n Attr ->
+    (children: Vect m HTMLElement) ->
+    {auto prf : (HTML.Elements.textChildren children) = True} ->
+    HTMLElement
+textarea attrs children = mkElement Textarea attrs children
+
+detailsChildren : Vect m HTMLElement -> Bool
+detailsChildren (x :: xs) = (isTag Summary x) && (validChildren isFlowContent xs)
+detailsChildren _ = False
+
+details :
+    Vect n Attr ->
+    (children: Vect m HTMLElement) ->
+    {auto prf : (HTML.Elements.detailsChildren children) = True} ->
+    HTMLElement
+details attrs children = mkElement Details attrs children
+
+dialog :
+    Vect n Attr ->
+    (children: Vect m HTMLElement) ->
+    {auto prf : (HTML.Elements.flowChildren children) = True} ->
+    HTMLElement
+dialog attrs children = mkElement Dialog attrs children
+
 -- menu :
 --     Vect n Attr ->
 --     (children: Vect m HTMLElement) ->
 --     {auto prf : (HTML.Elements.flowChildren children) = True} ->
 --     HTMLElement
 -- menu attrs children = mkElement Menu attrs children
+-- If the element is in the list menu state: flow content, or alternatively, zero or more occurrences of <li>, <script>, and <template>.
+-- If the element is in the context menu state: zero or more occurrences, in any order, of <menu> (context menu state only), <menuitem {deprecated}>, <hr>, <script>, and <template>.
+-- TODO: oof...
 --
--- menuitem :
---     Vect n Attr ->
---     (children: Vect m HTMLElement) ->
---     {auto prf : (HTML.Elements.flowChildren children) = True} ->
---     HTMLElement
--- menuitem attrs children = mkElement Menuitem attrs children
---
--- summary :
---     Vect n Attr ->
---     (children: Vect m HTMLElement) ->
---     {auto prf : (HTML.Elements.flowChildren children) = True} ->
---     HTMLElement
--- summary attrs children = mkElement Summary attrs children
---
--- slot :
---     Vect n Attr ->
---     (children: Vect m HTMLElement) ->
---     {auto prf : (HTML.Elements.flowChildren children) = True} ->
---     HTMLElement
--- slot attrs children = mkElement Slot attrs children
---
--- template :
---     Vect n Attr ->
---     (children: Vect m HTMLElement) ->
---     {auto prf : (HTML.Elements.flowChildren children) = True} ->
---     HTMLElement
--- template attrs children = mkElement Template attrs children
+
+summaryChildren : Vect m HTMLElement -> Bool
+summaryChildren (x :: Nil) = isHeadingContent x
+summaryChildren children = phrasingChildren children
+
+summary :
+    Vect n Attr ->
+    (children: Vect m HTMLElement) ->
+    {auto prf : (HTML.Elements.summaryChildren children) = True} ->
+    HTMLElement
+summary attrs children = mkElement Summary attrs children
+
+template :
+    Vect n Attr ->
+    (children: Vect m HTMLElement) ->
+    {auto prf : (HTML.Elements.anyChildren children) = True} ->
+    HTMLElement
+template attrs children = mkElement Template attrs children
