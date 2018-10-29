@@ -220,6 +220,10 @@ isFormAssociatedContent (MkHTMLElement (MkElement Select _ _ _)) = True
 isFormAssociatedContent (MkHTMLElement (MkElement Textarea _ _ _)) = True
 isFormAssociatedContent _ = False
 
+isTransparentContent : HTMLElement -> Bool
+isTransparentContent (MkHTMLElement (MkElement Textarea _ _ _)) = True
+isTransparentContent _ = False
+
 isTextNode : HTMLElement -> Bool
 isTextNode (MkHTMLTextNode _) = True
 isTextNode _ = False
@@ -295,12 +299,19 @@ validAddressChildren (x :: xs) = validAddressContent x && validAddressChildren x
                 MkHTMLElement (MkElement _ _ _ children') => validAddressChildren children'
                 _ => True
 
+address_ :
+    Vect n Attr ->
+    (children : Vect m HTMLElement) ->
+    HTMLElement
+address_ attrs children = mkElement Address attrs children
+
+
 address :
     Vect n Attr ->
     (children : Vect m HTMLElement) ->
     {auto prf : (HTML.Elements.validAddressChildren children) = True} ->
     HTMLElement
-address attrs children = mkElement Address attrs children
+address attrs children = address_ attrs children
 
 article :
     Vect n Attr ->
@@ -500,12 +511,18 @@ hr :
     HTMLElement
 hr attrs children = mkElement Hr {omit = True} attrs children
 
+li_ :
+    Vect n Attr ->
+    (children: Vect m HTMLElement) ->
+    HTMLElement
+li_ attrs children = mkElement Li attrs children
+
 li :
     Vect n Attr ->
     (children: Vect m HTMLElement) ->
     {auto prf : (HTML.Elements.flowChildren children) = True} ->
     HTMLElement
-li attrs children = mkElement Li attrs children
+li attrs children = li_ attrs children
 
 ol :
     Vect n Attr ->
@@ -528,12 +545,18 @@ pre :
     HTMLElement
 pre attrs children = mkElement Pre attrs children
 
+ul_ :
+    Vect n Attr ->
+    (children: Vect m HTMLElement) ->
+    HTMLElement
+ul_ attrs children = mkElement Ul attrs children
+
 ul :
     Vect n Attr ->
     (children: Vect m HTMLElement) ->
     {auto prf : (HTML.Elements.validChildren (HTML.Elements.isTag Li) children) = True} ->
     HTMLElement
-ul attrs children = mkElement Ul attrs children
+ul attrs children = ul_ attrs children
 
 aChildren : Vect m HTMLElement -> Bool
 aChildren Nil = True
