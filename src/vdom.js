@@ -3,7 +3,7 @@
         return Object.prototype.hasOwnProperty.call(o,p);
     };
     window.pamperscript = window.pamperscript || {};
-    window.pamperscript.makeElement = function makeElement(type, attrs, text, children) {
+    window.pamperscript.makeElement = function makeElement(type, attrs, children, text) {
         text = text || '';
         if (type === 'text') {
             return text;
@@ -12,7 +12,7 @@
         attrs = attrs || [];
         return { type:type, attrs:attrs, children:children };
     };
-    window.pamperscript.makeAttr = function makeAttr(k, v, o) {
+    window.pamperscript.makeAttr = function makeAttr(o, k, v) {
         o = o || {};
         o[k] = v;
         return o;
