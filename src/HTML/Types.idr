@@ -1,7 +1,5 @@
 module HTML.Types
 
-import Data.Vect
-
 -- TODO: FIX ACCESS
 %access public export
 
@@ -355,8 +353,8 @@ mutual
         constructor MkElement
         type : TypeTag
         omitTag : Bool
-        attrs : Vect n Attr
-        children : Vect m HTMLElement
+        attrs : List Attr
+        children : List HTMLElement
 
     data HTMLElement = MkHTMLElement Element | MkHTMLTextNode TextNode
 
@@ -371,10 +369,10 @@ mutual
         (showChildren children) ++
         (if not omitTag then "</" ++ (show type) ++ ">" else "")
         where
-            showAttrs : Vect n Attr -> String
+            showAttrs : List Attr -> String
             showAttrs Nil = ""
             showAttrs attrs' = " " ++ (foldl (++) "" $ intersperse " " $ map show attrs')
-            showChildren : Vect m HTMLElement -> String
+            showChildren : List HTMLElement -> String
             showChildren children' = foldl (\acc, elem => acc ++ (showHTMLElement elem)) "" children'
 
 
