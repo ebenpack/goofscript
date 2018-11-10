@@ -4,18 +4,18 @@
     };
     window.pamperscript = window.pamperscript || {};
     window.pamperscript.makeElement = function makeElement(type, attrs, children, text) {
-        text = text || '';
         if (type === 'text') {
+            text = text || '';
             return text;
         }
         children = children || [];
         attrs = attrs || [];
-        return { type:type, attrs:attrs, children:children };
+        return { type: type, attrs: attrs, children: children };
     };
-    window.pamperscript.makeAttr = function makeAttr(o, k, v) {
-        o = o || {};
-        o[k] = v;
-        return o;
+    window.pamperscript.makeAttr = function makeAttr(obj, key, val) {
+        obj = obj || {};
+        obj[key] = val;
+        return obj;
     };
     window.pamperscript.createElement = function createElement(node) {
         if (typeof node === 'string') {
@@ -27,12 +27,12 @@
                 el[key] = node.attrs[key];
             }
         }
-        for (var i=0; i<node.children.length; i++) {
+        for (var i = 0; i < node.children.length; i++) {
             el.appendChild(createElement(node.children[i]));
         }
         return el;
     }
-    window.pamperscript.mountElement = function mountElement(el, root) {
+    window.pamperscript.mountElement = function mountElement(root, el) {
         root.appendChild(el);
     }
     function nodeChanged(node1, node2) {
@@ -60,7 +60,7 @@
                 updateElement(parent.childNodes[index], newNode.children[i], oldNode.children[i], i);
                 oldLength--;
             }
-            for (var i = 0; i < newLength || i < oldLength; i++) {
+            for (var i = 0; i < newLength; i++) {
                 updateElement(parent.childNodes[index], newNode.children[i], oldNode.children[i], i);
             }
         }

@@ -233,7 +233,7 @@ text : String -> HTMLElement
 text s = MkHTMLTextNode (MkTextNode s)
 
 validChildren : (HTMLElement -> Bool) -> List HTMLElement -> Bool
-validChildren _ Nil = True
+validChildren _ [] = True
 validChildren pred (x :: xs) = pred x && validChildren pred xs
 
 anyChildren : List HTMLElement -> Bool
